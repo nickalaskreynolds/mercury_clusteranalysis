@@ -1,0 +1,13 @@
+*.png
+*.gif
+*.jpg
+*.swp
+*.dmp
+*.tmp
+*.out
+*.aei
+*__pycache__*
+*.pyc
+
+# end of gitignore
+
