@@ -14,7 +14,7 @@ import numpy as np
 from nkrpy.keplerian import orbital_params
 from nkrpy.load import load_cfg, verify_dir
 from nkrpy.files import freplace
-from nkrpy.miscmath import plummer_radius, gaussian_sample
+from nkrpy.miscmath import plummer_radius, sample
 from nkrpy.functions import format_decimal
 from nkrpy.constants import msun, g, au
 
@@ -75,8 +75,8 @@ def generate_sim(cfg, orbitals, jobnumber):
     inp_repl += f'  0.D0 0.D0 0.D0\n'
 
     # now handle bodies
-    cfg.mass_bodies = gaussian_sample(cfg.bodies_l_mass, cfg.bodies_u_mass, size=cfg.num_bodies)
-    cfg.den_bodies = gaussian_sample(cfg.bodies_l_density, cfg.bodies_u_density, size=cfg.num_bodies)
+    cfg.mass_bodies = sample(cfg.bodies_l_mass, cfg.bodies_u_mass, size=cfg.num_bodies)
+    cfg.den_bodies = sample(cfg.bodies_l_density, cfg.bodies_u_density, size=cfg.num_bodies)
     for b, body in enumerate(orbitals):
         # embed()
         inp_repl += f' BODY{b}    m={cfg.mass_bodies[b]}D0 r=0.D0 d={cfg.den_bodies[b]}D0\n'
@@ -91,7 +91,7 @@ def generate_sim(cfg, orbitals, jobnumber):
         random_xyz = False
         # choose
         while not isinstance(random_xyz, np.ndarray):
-            points = np.abs(np.array(gaussian_sample(0, 1, size=3)))
+            points = np.abs(np.array(sample(0, 1, size=3)))
             norm = np.sqrt(np.sum(points ** 2))
             if norm == 0:
                 random_xyz = False
@@ -102,7 +102,7 @@ def generate_sim(cfg, orbitals, jobnumber):
         vel = np.sqrt(cfg.cluster_mass * msun * g / (plum_radius * au)) / au
         random_vel = False
         while not isinstance(random_vel, np.ndarray):
-            points = np.array([np.random.choice([-1,1]) * x for x in np.array(gaussian_sample(0, 1, size=3))])
+            points = np.array([np.random.choice([-1,1]) * x for x in np.array(sample(0, 1, size=3))])
             norm = np.sqrt(np.sum(points ** 2))
             if norm == 0:
                 random_vel = False
@@ -126,10 +126,11 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/cluster.in', '<days_for_interaction>', '{}'.format(int(cfg.days_for_interaction)))
 
     # handle param.in
+    central_mass = sample(cfg.central_l_mass, cfg.central_u_mass, size=1)
     freplace(f'{sim_name}/param.in', '<stop>', '{}'.format(cfg.stop_time))
     freplace(f'{sim_name}/param.in', '<interval>', '{}'.format(cfg.output_time))
     freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(cfg.timestep)))
-    freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(int(cfg.central_mass)))
+    freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(central_mass)))
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(len(cfg.mass_bodies))))
     pass
 
@@ -141,7 +142,8 @@ def main(config_name, jobnumber):
         config = load_cfg(config_name)
     else:
         config = config_name
-    nbod, avgdist, lsma, usma, lecc, uecc, linc, uinc, mass = \
+    nb_u, nb_l, avgdist, lsma, usma, lecc, uecc, linc, uinc, mass = \
+        config.num_bodies_u, config.num_bodies_l,\
         config.num_bodies, config.avg_dist, \
         config.lower_smajora, config.upper_smajora, \
         config.lower_ecc, config.upper_ecc, \
@@ -149,6 +151,7 @@ def main(config_name, jobnumber):
         config.central_mass
     # generate lower orbit runs
     orbits = []
+    nbod = np.int(np.abs(sample(nb_l, nb_u, size=1)))
     for n in range(nbod):
         orbits.append(
             orbital_params(lsma + n * avgdist, usma +

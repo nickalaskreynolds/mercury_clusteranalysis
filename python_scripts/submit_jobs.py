@@ -78,15 +78,19 @@ def fill_queue(cfg, q):
 
 
 def build_slurm(cfg, modelnum):
-    dest = f'{cfg.destination}/{cfg.naming_schema}/{cfg.naming_schema}_sim{modelnum}'.replace('//', '/')
-    #embed()
+    dest = f'{cfg.destination}/{cfg.naming_schema}/' +\
+        f'{cfg.naming_schema}_sim{modelnum}'.replace('//', '/')
     freplace(f'{dest}/slurm.sh', '<name>', cfg.naming_schema)
     freplace(f'{dest}/slurm.sh', '<timelimit>', cfg.timelimit)
     freplace(f'{dest}/slurm.sh', '<workdir>', dest)
     freplace(f'{dest}/slurm.sh', '<cmd>', cfg.program)
-    with open(f'{cfg.destination}/{cfg.naming_schema}/slurm_master_restart.sh', 'a') as f:
+    with open(f'{cfg.destination}/{cfg.naming_schema}/' +
+              f'slurm_master_restart.sh', 'a') as f:
         f.write(f'sbatch {dest}/slurm.sh &\n')
-
+    with open(f'{cfg.destination}/{cfg.naming_schema}/' +
+              f'refresh_outputs.sh', 'a') as f:
+        f.write(f'cd {cfg.naming_schema}_sim{modelnum} ;' +
+                f' ./element6 ;echo "Finished {modelnum}"\n')
 
 def recover_job(string):
     """Parse jobnumber."""
@@ -114,12 +118,15 @@ def check_status(jobnum):
 
 
 def sub_job(cfg, jobnum, modelnum):
-    dest = f'{cfg.destination}/{cfg.naming_schema}/{cfg.naming_schema}_sim{modelnum}/'.replace('//', '/')
+    dest = f'{cfg.destination}/{cfg.naming_schema}/' +\
+           f'{cfg.naming_schema}_sim{modelnum}/'.replace('//', '/')
     job = False
     sub_count = 0
-    while not job and ((sub_count / 60.) < checkconv(cfg.timelimit) * 3600. * 1.1 ):
+    while not job and ((sub_count / 60.) < checkconv(cfg.timelimit) *
+                       3600. * 1.1):
         run = f'sbatch {dest}slurm.sh'
-        result = run_command(run.split(' ')).__next__().decode("utf-8").strip('\n')
+        result = run_command(run.split(' ')).__next__()\
+            .decode("utf-8").strip('\n')
         job = recover_job(result)
         sub_count += 1
         sleep(1)
@@ -136,9 +143,12 @@ def job_manager(cfg):
     __job_start__ = queue.Queue(maxsize=__max_queue__)
     __job_finish__ = set()
 
-    threads = [threading.Thread(target=worker, args=(__job_start__, __job_finish__, i)) for i in range(cfg.num_threads)]
+    threads = [threading.Thread(target=worker, args=(__job_start__,
+                                __job_finish__, i))
+               for i in range(cfg.num_threads)]
 
-    threads.insert(0,threading.Thread(target=fill_queue, args=(cfg, __job_start__)))
+    threads.insert(0, threading.Thread(target=fill_queue,
+                                       args=(cfg, __job_start__)))
 
     for t in threads:
         t.start()

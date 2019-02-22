@@ -25,7 +25,8 @@ days_for_interaction = 365E7  # days for interactions to take place
 plummer_model = True
 
 # primary source
-central_mass = 1  # mass of central potential Msun
+central_l_mass = 1.  # mass of central potential Msun
+central_u_mass = 1.  # mass of central potential Msun
 
 # handle binary object
 binary_mass = 0.5
@@ -38,7 +39,8 @@ binary_l_inc = 0
 binary_u_inc = 90
 
 # handle bodies
-num_bodies = 2  # number of bodies within an orbit
+num_bodies_l = 1  # max number of bodies within an orbit
+num_bodies_u = 8  # max number of bodies within an orbit
 bodies_l_mass = 0.001  # lower mass of bodies
 bodies_u_mass = 0.1  # upper mass of bodies
 bodies_l_density = 5.43  # lower density of bodies in Msun
