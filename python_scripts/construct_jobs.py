@@ -143,8 +143,7 @@ def main(config_name, jobnumber):
     else:
         config = config_name
     nb_u, nb_l, avgdist, lsma, usma, lecc, uecc, linc, uinc, mass = \
-        config.num_bodies_u, config.num_bodies_l,\
-        config.num_bodies, config.avg_dist, \
+        config.num_bodies_u, config.num_bodies_l, config.avg_dist, \
         config.lower_smajora, config.upper_smajora, \
         config.lower_ecc, config.upper_ecc, \
         config.lower_inc, config.upper_inc, \
