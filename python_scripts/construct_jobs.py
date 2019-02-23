@@ -42,9 +42,6 @@ def generate_sim(cfg, orbitals, jobnumber):
     os.makedirs(dest, exist_ok=True)
     verify_dir(dest)
     os.chdir(dest)
-    if not os.path.isfile(f'{dest}/{cfg.program}'):
-        print(f'Could not find the compiled mercury file: <{dest}/{cfg.program}>\nPlease go into the <{dest}> and run the makefile.')
-        exit()
 
     # bodies for a single sim
     sim_name = f'{dest}{cfg.naming_schema}_sim{jobnumber}'
@@ -66,6 +63,9 @@ def generate_sim(cfg, orbitals, jobnumber):
             shutil.copyfile(x, f'{dest}/{dname}')
             shutil.copystat(x, f'{dest}/{dname}')
     print('Made files')
+    if not os.path.isfile(f'{dest}/{cfg.program}'):
+        print(f'Could not find the compiled mercury file: <{dest}/{cfg.program}>\nPlease go into the <{dest}> and run the makefile.')
+        exit()
 
     # handle the 'big.in' file
     # generating binary
