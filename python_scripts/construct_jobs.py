@@ -7,7 +7,7 @@ import shutil
 from glob import glob
 from decimal import Decimal
 import subprocess
-from copy import deepcopy
+from importlib import reload
 try:
     import cPickle as pickle
 except ModuleNotFoundError:
@@ -150,7 +150,7 @@ def main(config_name, jobnumber):
     if isinstance(config_name, str):
         config = load_cfg(config_name)
     else:
-        config = deepcopy(config_name)
+        config = reload(config_name)
     try:
         config.sub[f'{jobnumber}'] = {}
     except:
