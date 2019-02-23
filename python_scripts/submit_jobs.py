@@ -85,10 +85,10 @@ def build_slurm(cfg, modelnum):
     freplace(f'{dest}/slurm.sh', '<workdir>', dest)
     freplace(f'{dest}/slurm.sh', '<cmd>', cfg.program)
     with open(f'{cfg.destination}/{cfg.naming_schema}/' +
-              f'slurm_master_restart.sh', 'a') as f:
+              f'slurm_master_restart_{cfg.time}.sh', 'a') as f:
         f.write(f'sbatch {dest}/slurm.sh &\n')
     with open(f'{cfg.destination}/{cfg.naming_schema}/' +
-              f'refresh_outputs.sh', 'a') as f:
+              f'refresh_outputs_{cfg.time}.sh', 'a') as f:
         f.write(f'cd {cfg.naming_schema}_sim{modelnum} ;' +
                 f' ./element6 ;echo "Finished {modelnum}"\n')
 
@@ -162,6 +162,7 @@ def job_manager(cfg):
 def main(cfg_name):
     """Main caller function."""
     config = load_cfg(cfg_name)
+    config.time = str(time()).replace('.', '_')
     dest = f'{config.destination}/{config.naming_schema}/'.replace('//', '/')
     verify_dir(dest, True)
     job_manager(config)
