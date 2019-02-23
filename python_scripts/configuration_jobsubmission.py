@@ -29,7 +29,8 @@ central_l_mass = 1.  # mass of central potential Msun
 central_u_mass = 1.  # mass of central potential Msun
 
 # handle binary object
-binary_mass = 0.5
+binary_l_mass = 1.  # mass of central potential Msun
+binary_u_mass = 1.  # mass of central potential Msun
 binary_density = 5.43
 binary_l_sma = 5
 binary_u_sma = 10

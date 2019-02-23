@@ -62,21 +62,23 @@ def generate_sim(cfg, orbitals, jobnumber):
 
     # handle the 'big.in' file
     # generating binary
+    central_mass = cfg.sub[f'{jobnumber}']['central_mass']
     binary_params = orbital_params(cfg.binary_l_sma, cfg.binary_u_sma, cfg.binary_l_ecc,
                                    cfg.binary_u_ecc, cfg.binary_l_inc, cfg.binary_u_inc,
-                                   cfg.central_mass, size=1)[1][0]
+                                   central_mass, size=1)[1][0]
     binary_params = [x for x in list(map(lambda x: format_decimal(x, 4), list(binary_params)))]
 
     inp_repl = ''
     # insert logic for binary
-    inp_repl += f' WB m={cfg.binary_mass}D0 r=0.D0 d={cfg.binary_density}D0\n'
+    binary_mass = cfg.sub[f'{jobnumber}']['binary_mass']
+    inp_repl += f' WB m={binary_mass}D0 r=0.D0 d={cfg.binary_density}D0\n'
     inp_repl += f'  {" ".join(binary_params[0:3])}\n'
     inp_repl += f'  {" ".join(binary_params[3:])}\n'
     inp_repl += f'  0.D0 0.D0 0.D0\n'
 
     # now handle bodies
-    cfg.mass_bodies = sample(cfg.bodies_l_mass, cfg.bodies_u_mass, size=cfg.num_bodies)
-    cfg.den_bodies = sample(cfg.bodies_l_density, cfg.bodies_u_density, size=cfg.num_bodies)
+    cfg.mass_bodies = sample(cfg.bodies_l_mass, cfg.bodies_u_mass, size=cfg.sub[f'{jobnumber}']['num_bodies'])
+    cfg.den_bodies = sample(cfg.bodies_l_density, cfg.bodies_u_density, size=cfg.sub[f'{jobnumber}']['num_bodies'])
     for b, body in enumerate(orbitals):
         # embed()
         inp_repl += f' BODY{b}    m={cfg.mass_bodies[b]}D0 r=0.D0 d={cfg.den_bodies[b]}D0\n'
@@ -126,11 +128,10 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/cluster.in', '<days_for_interaction>', '{}'.format(int(cfg.days_for_interaction)))
 
     # handle param.in
-    central_mass = sample(cfg.central_l_mass, cfg.central_u_mass, size=1)
     freplace(f'{sim_name}/param.in', '<stop>', '{}'.format(cfg.stop_time))
     freplace(f'{sim_name}/param.in', '<interval>', '{}'.format(cfg.output_time))
     freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(cfg.timestep)))
-    freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(central_mass)))
+    freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(cfg.sub[f'{jobnumber}']['central_mass'])))
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(len(cfg.mass_bodies))))
     pass
 
@@ -142,15 +143,23 @@ def main(config_name, jobnumber):
         config = load_cfg(config_name)
     else:
         config = config_name
-    nb_u, nb_l, avgdist, lsma, usma, lecc, uecc, linc, uinc, mass = \
+    try:
+        config.sub[f'{jobnumber}'] = {}
+    except:
+        config.sub = {}
+        config.sub[f'{jobnumber}'] = {}
+    config.sub[f'{jobnumber}']['central_mass'] = sample(config.central_l_mass, config.central_u_mass, size=1)[0]
+    nb_u, nb_l, avgdist, lsma, usma, lecc, uecc, linc, uinc = \
         config.num_bodies_u, config.num_bodies_l, config.avg_dist, \
         config.lower_smajora, config.upper_smajora, \
         config.lower_ecc, config.upper_ecc, \
-        config.lower_inc, config.upper_inc, \
-        config.central_mass
+        config.lower_inc, config.upper_inc
+    config.sub[f'{jobnumber}']['binary_mass'] = sample(config.binary_l_mass, config.binary_u_mass, size=1, resample=True, lim=config.sub[f'{jobnumber}']['central_mass'], logic='<')[0]
+    mass = config.sub[f'{jobnumber}']['central_mass']
     # generate lower orbit runs
     orbits = []
     nbod = np.int(np.abs(sample(nb_l, nb_u, size=1)))
+    mass = config.sub[f'{jobnumber}']['num_bodies'] = nbod
     for n in range(nbod):
         orbits.append(
             orbital_params(lsma + n * avgdist, usma +

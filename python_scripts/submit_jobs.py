@@ -142,6 +142,7 @@ def job_manager(cfg):
     # startup workers
     __job_start__ = queue.Queue(maxsize=__max_queue__)
     __job_finish__ = set()
+    cfg.sub = {}
 
     threads = [threading.Thread(target=worker, args=(__job_start__,
                                 __job_finish__, i))
