@@ -139,6 +139,9 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(len(cfg.mass_bodies))))
 
     # save config
+    write_cfg = mod_2_dict(cfg)
+    write_cfg['sub'] = write_cfg['sub'][f'{jobnumber}']
+    write_cfg['sub']['job_number'] = f'{jobnumber}'
     with open(f'{sim_name}/configuration_params.pickle', 'wb') as f:
         pickle.dump(mod_2_dict(cfg), f, pickle.HIGHEST_PROTOCOL)
     pass
@@ -150,7 +153,7 @@ def main(config_name, jobnumber):
     if isinstance(config_name, str):
         config = load_cfg(config_name)
     else:
-        config = reload(config_name)
+        config = config_name
     try:
         config.sub[f'{jobnumber}'] = {}
     except:
