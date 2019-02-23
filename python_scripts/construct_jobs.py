@@ -7,12 +7,16 @@ import shutil
 from glob import glob
 from decimal import Decimal
 import subprocess
-from IPython import embed
+from copy import deepcopy
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
 
 # external modules
 import numpy as np
 from nkrpy.keplerian import orbital_params
-from nkrpy.load import load_cfg, verify_dir
+from nkrpy.load import load_cfg, verify_dir, mod_2_dict
 from nkrpy.files import freplace
 from nkrpy.miscmath import plummer_radius, sample
 from nkrpy.functions import format_decimal
@@ -133,6 +137,10 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(cfg.timestep)))
     freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(cfg.sub[f'{jobnumber}']['central_mass'])))
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(len(cfg.mass_bodies))))
+
+    # save config
+    with open(f'{sim_name}/configuration_params.pickle', 'wb') as f:
+        pickle.dump(mod_2_dict(cfg), f, pickle.HIGHEST_PROTOCOL)
     pass
 
 
@@ -142,7 +150,7 @@ def main(config_name, jobnumber):
     if isinstance(config_name, str):
         config = load_cfg(config_name)
     else:
-        config = config_name
+        config = deepcopy(config_name)
     try:
         config.sub[f'{jobnumber}'] = {}
     except:
