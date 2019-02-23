@@ -170,7 +170,7 @@ def main(config_name, jobnumber):
     # generate lower orbit runs
     orbits = []
     nbod = np.int(np.abs(sample(nb_l, nb_u, size=1)))
-    mass = config.sub[f'{jobnumber}']['num_bodies'] = nbod
+    config.sub[f'{jobnumber}']['num_bodies'] = nbod
     for n in range(nbod):
         orbits.append(
             orbital_params(lsma + n * avgdist, usma +
