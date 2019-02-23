@@ -156,7 +156,7 @@ def generate_sim(cfg, orbitals, jobnumber):
     write_cfg['sub'] = write_cfg['sub'][f'{jobnumber}']
     write_cfg['sub']['job_number'] = f'{jobnumber}'
     with open(f'{sim_name}/configuration_params.pickle', 'wb') as f:
-        pickle.dump(mod_2_dict(cfg), f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(write_cfg, f, pickle.HIGHEST_PROTOCOL)
     pass
 
 
