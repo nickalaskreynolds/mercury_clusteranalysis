@@ -38,7 +38,7 @@ if _cwd_ == '':
 def generate_sim(cfg, orbitals, jobnumber):
     """Generate the simulations wrapper."""
     # generate a tmp directory
-    dest = f'{cfg.destination}/{cfg.naming_schema}/'.replace('//','/')
+    dest = f'{cfg.destination}/{cfg.naming_schema}/'.replace('//', '/')
     os.makedirs(dest, exist_ok=True)
     verify_dir(dest)
     os.chdir(dest)
@@ -67,10 +67,15 @@ def generate_sim(cfg, orbitals, jobnumber):
     # handle the 'big.in' file
     # generating binary
     central_mass = cfg.sub[f'{jobnumber}']['central_mass']
-    binary_params = orbital_params(cfg.binary_l_sma, cfg.binary_u_sma, cfg.binary_l_ecc,
-                                   cfg.binary_u_ecc, cfg.binary_l_inc, cfg.binary_u_inc,
+    binary_params = orbital_params(cfg.binary_l_sma,
+                                   cfg.binary_u_sma,
+                                   cfg.binary_l_ecc,
+                                   cfg.binary_u_ecc,
+                                   cfg.binary_l_inc,
+                                   cfg.binary_u_inc,
                                    central_mass, size=1)[1][0]
-    binary_params = [x for x in list(map(lambda x: format_decimal(x, 4), list(binary_params)))]
+    binary_params = [x for x in list(map(lambda x: format_decimal(x, 4),
+                                         list(binary_params)))]
 
     inp_repl = ''
     # insert logic for binary
@@ -81,11 +86,13 @@ def generate_sim(cfg, orbitals, jobnumber):
     inp_repl += f'  0.D0 0.D0 0.D0\n'
 
     # now handle bodies
-    cfg.mass_bodies = sample(cfg.bodies_l_mass, cfg.bodies_u_mass, size=cfg.sub[f'{jobnumber}']['num_bodies'])
-    cfg.den_bodies = sample(cfg.bodies_l_density, cfg.bodies_u_density, size=cfg.sub[f'{jobnumber}']['num_bodies'])
+    cfg.sub[f'{jobnumber}']['mass_bodies'] = sample(cfg.bodies_l_mass,
+        cfg.bodies_u_mass, size=cfg.sub[f'{jobnumber}']['num_bodies']) # noqa
+    cfg.sub[f'{jobnumber}']['den_bodies'] = sample(cfg.bodies_l_density,
+        cfg.bodies_u_density, size=cfg.sub[f'{jobnumber}']['num_bodies']) # noqa
+    from IPython import embed
     for b, body in enumerate(orbitals):
-        # embed()
-        inp_repl += f' BODY{b}    m={cfg.mass_bodies[b]}D0 r=0.D0 d={cfg.den_bodies[b]}D0\n'
+        inp_repl += f' BODY{b}    m={cfg.sub[f'{jobnumber}']['mass_bodies'][b]}D0 r=0.D0 d={cfg.sub[f'{jobnumber}']['den_bodies'][b]}D0\n' # noqa
         tmp = [x for x in list(map(lambda x: format_decimal(x, 4), list(body)))]
         inp_repl += f'  {" ".join(tmp[0:3])}\n'
         inp_repl += f'  {" ".join(tmp[3:])}\n'
@@ -108,7 +115,8 @@ def generate_sim(cfg, orbitals, jobnumber):
         vel = np.sqrt(cfg.cluster_mass * msun * g / (plum_radius * au)) / au
         random_vel = False
         while not isinstance(random_vel, np.ndarray):
-            points = np.array([np.random.choice([-1,1]) * x for x in np.array(sample(0, 1, size=3))])
+            points = np.array([np.random.choice([-1,1]) * x
+                               for x in np.array(sample(0, 1, size=3))])
             norm = np.sqrt(np.sum(points ** 2))
             if norm == 0:
                 random_vel = False
@@ -116,7 +124,8 @@ def generate_sim(cfg, orbitals, jobnumber):
                 points *= vel
                 random_vel = points
         testp = np.concatenate([random_xyz, random_vel])
-        testp = [x for x in list(map(lambda x: format_decimal(x, 4), list(testp)))]
+        testp = [x for x in list(map(lambda x: format_decimal(x, 4),
+                                     list(testp)))]
     else:
         testp = ['0.D0' for x in range(6)]
     inp_repl += f'TESTP m=1.D-81 r=0.D0 d=1.4D0\n'
@@ -136,7 +145,7 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/param.in', '<interval>', '{}'.format(cfg.output_time))
     freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(cfg.timestep)))
     freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(cfg.sub[f'{jobnumber}']['central_mass'])))
-    freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(len(cfg.mass_bodies))))
+    freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(cfg.sub[f'{jobnumber}']['num_bodies'])))
 
     # save config
     write_cfg = mod_2_dict(cfg)
@@ -177,6 +186,7 @@ def main(config_name, jobnumber):
                     n * avgdist, lecc, uecc, # noqa
                     linc, uinc, mass, # noqa
                     size=1)[1][0]) # noqa
+    config.sub[f'{jobnumber}']['orbitals'] = orbits
     generate_sim(config, orbits, jobnumber)
     pass
 
