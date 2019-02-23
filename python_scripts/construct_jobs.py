@@ -92,8 +92,9 @@ def generate_sim(cfg, orbitals, jobnumber):
         cfg.bodies_u_density, size=cfg.sub[f'{jobnumber}']['num_bodies']) # noqa
     from IPython import embed
     for b, body in enumerate(orbitals):
-        inp_repl += f' BODY{b}    m={cfg.sub[f'{jobnumber}']['mass_bodies'][b]}D0 r=0.D0 d={cfg.sub[f'{jobnumber}']['den_bodies'][b]}D0\n' # noqa
-        tmp = [x for x in list(map(lambda x: format_decimal(x, 4), list(body)))]
+        inp_repl += f" BODY{b}    m={cfg.sub[f'{jobnumber}']['mass_bodies'][b]}D0 r=0.D0 d={cfg.sub[f'{jobnumber}']['den_bodies'][b]}D0\n" # noqa
+        tmp = [x for x in list(map(lambda x: format_decimal(x, 4),
+                                   list(body)))]
         inp_repl += f'  {" ".join(tmp[0:3])}\n'
         inp_repl += f'  {" ".join(tmp[3:])}\n'
         inp_repl += f'  0.D0 0.D0 0.D0\n'
