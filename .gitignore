@@ -8,6 +8,9 @@
 *.aei
 *__pycache__*
 *.pyc
-
+mercury6_4mult_passstarsfeelplum_instantremove_closeenc_nogasdisk
+mercury6_4mult_passstarsfeelplum_instantremove_closeenc_withgasdisk
+close6
+element6
 # end of gitignore
 
