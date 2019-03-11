@@ -90,7 +90,7 @@ def build_slurm(cfg, modelnum):
     with open(f'{cfg.destination}/{cfg.naming_schema}/' +
               f'refresh_outputs_{cfg.time}.sh', 'a') as f:
         f.write(f'cd {cfg.naming_schema}_sim{modelnum} ;' +
-                f' ./element6 ;echo "Finished {modelnum}"\n')
+                f' ./element6 ;echo "Finished {modelnum};cd ../"\n')
 
 def recover_job(string):
     """Parse jobnumber."""

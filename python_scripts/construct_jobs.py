@@ -105,6 +105,8 @@ def generate_sim(cfg, orbitals, jobnumber):
     if cfg.plummer_model:
         plum_mass_enc = np.random.rand(1)[0]
         plum_radius = plummer_radius(plum_mass_enc, cfg.cluster_radius)
+        cfg.plum_mass_enc = plum_mass_enc
+        cfg.plum_radius = plum_radius
         random_xyz = False
         # choose
         while not isinstance(random_xyz, np.ndarray):
@@ -132,7 +134,7 @@ def generate_sim(cfg, orbitals, jobnumber):
                                      list(testp)))]
     else:
         testp = ['0.D0' for x in range(6)]
-    inp_repl += f'TESTP m=1.D-81 r=0.D0 d=1.4D0\n'
+    inp_repl += f'TESTP m=1.D-81 r=0.D0 d=0.D0\n'
     inp_repl += f'  {" ".join(testp[0:3])}\n'
     inp_repl += f'  {" ".join(testp[3:])}\n'
     inp_repl += f'  0.D0 0.D0 0.D0\n'
