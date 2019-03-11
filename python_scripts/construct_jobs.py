@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 
 # external modules
 import numpy as np
-from nkrpy.keplerian import orbital_params
+from nkrpy.keplerian import orbital_params, xyz_2_orbital
 from nkrpy.load import load_cfg, verify_dir, mod_2_dict
 from nkrpy.files import freplace
 from nkrpy.miscmath import plummer_radius, sample
@@ -35,7 +35,7 @@ if _cwd_ == '':
     _cwd_ = os.getcwd()
 
 
-def generate_sim(cfg, orbitals, jobnumber):
+def generate_sim(cfg, orbitals, jobnumber, verbose=False):
     """Generate the simulations wrapper."""
     # generate a tmp directory
     dest = f'{cfg.destination}/{cfg.naming_schema}/'.replace('//', '/')
@@ -46,6 +46,8 @@ def generate_sim(cfg, orbitals, jobnumber):
     # bodies for a single sim
     sim_name = f'{dest}{cfg.naming_schema}_sim{jobnumber}'
     # copy over program files
+    if verbose:
+        print('Copying Files')
     try:
         shutil.copytree(f'{_cwd_}/{cfg.parent_mercury_inputs}',
                         f'{sim_name}', symlinks=True)
@@ -62,13 +64,16 @@ def generate_sim(cfg, orbitals, jobnumber):
             print(f'Creating program: {x} in \n{dest}/{dname}')
             shutil.copyfile(x, f'{dest}/{dname}')
             shutil.copystat(x, f'{dest}/{dname}')
-    print('Made files')
+    if verbose:
+        print('Made files')
     if not os.path.isfile(f'{dest}/{cfg.program}'):
         print(f'Could not find the compiled mercury file: <{dest}/{cfg.program}>\nPlease go into the <{dest}> and run the makefile.')
         exit()
 
     # handle the 'big.in' file
     # generating binary
+    if verbose:
+        print('Writing Big.in')
     central_mass = cfg.sub[f'{jobnumber}']['central_mass']
     binary_params = orbital_params(cfg.binary_l_sma,
                                    cfg.binary_u_sma,
@@ -82,6 +87,8 @@ def generate_sim(cfg, orbitals, jobnumber):
 
     inp_repl = ''
     # insert logic for binary
+    if verbose:
+        print('Writing Binary')
     binary_mass = cfg.sub[f'{jobnumber}']['binary_mass']
     inp_repl += f' WB m={binary_mass}D0 r=0.D0 d={cfg.binary_density}D0\n'
     inp_repl += f'  {" ".join(binary_params[0:3])}\n'
@@ -89,11 +96,12 @@ def generate_sim(cfg, orbitals, jobnumber):
     inp_repl += f'  0.D0 0.D0 0.D0\n'
 
     # now handle bodies
+    if verbose:
+        print('Writing Bodies')
     cfg.sub[f'{jobnumber}']['mass_bodies'] = sample(cfg.bodies_l_mass,
         cfg.bodies_u_mass, size=cfg.sub[f'{jobnumber}']['num_bodies']) # noqa
     cfg.sub[f'{jobnumber}']['den_bodies'] = sample(cfg.bodies_l_density,
         cfg.bodies_u_density, size=cfg.sub[f'{jobnumber}']['num_bodies']) # noqa
-    from IPython import embed
     for b, body in enumerate(orbitals):
         inp_repl += f" BODY{b}    m={cfg.sub[f'{jobnumber}']['mass_bodies'][b]}D0 r=0.D0 d={cfg.sub[f'{jobnumber}']['den_bodies'][b]}D0\n" # noqa
         tmp = [x for x in list(map(lambda x: format_decimal(x, 4),
@@ -102,6 +110,8 @@ def generate_sim(cfg, orbitals, jobnumber):
         inp_repl += f'  {" ".join(tmp[3:])}\n'
         inp_repl += f'  0.D0 0.D0 0.D0\n'
     # insert login for testp
+    if verbose:
+        print('Writing TestP')
     if cfg.plummer_model:
         plum_mass_enc = np.random.rand(1)[0]
         plum_radius = plummer_radius(plum_mass_enc, cfg.cluster_radius)
@@ -142,17 +152,20 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/big.in', '<input>', inp_repl)
 
     # handle cluster.in file
+    if verbose:
+        print('Cluster File')
     freplace(f'{sim_name}/cluster.in', '<mass>', '{}'.format(cfg.cluster_mass, '.15f'))
     freplace(f'{sim_name}/cluster.in', '<radius>', '{}'.format(cfg.cluster_radius, '.2f'))
     freplace(f'{sim_name}/cluster.in', '<days_for_interaction>', '{}'.format(int(cfg.days_for_interaction)))
 
     # handle param.in
+    if verbose:
+        print('Param File')
     def compute_timestep(mass, state_vec):
         orb = xyz_2_orbital(state_vec[np.newaxis, :], mass)[0]
-        print(orb, mass)
         return ((1. / (kepler * mass)) * (orb[0] ** 3)) ** 0.5 / 20.
 
-    timestep = compute_timestep(central_mass, orbitals[0, :])
+    timestep = compute_timestep(central_mass, orbitals[0])
     freplace(f'{sim_name}/param.in', '<stop>', '{}'.format(cfg.stop_time))
     freplace(f'{sim_name}/param.in', '<interval>', '{}'.format(cfg.output_time))
     freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(np.ceil(timestep))))
@@ -160,6 +173,8 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(cfg.sub[f'{jobnumber}']['num_bodies'])))
 
     # save config
+    if verbose:
+        print('Saving Config')
     write_cfg = mod_2_dict(cfg)
     write_cfg['sub'] = write_cfg['sub'][f'{jobnumber}']
     write_cfg['sub']['job_number'] = f'{jobnumber}'
@@ -168,9 +183,11 @@ def generate_sim(cfg, orbitals, jobnumber):
     pass
 
 
-def main(config_name, jobnumber):
+def main(config_name, jobnumber, verbose=False):
     """Main caller function."""
     # load cfg
+    if verbose:
+        print('Load Config')
     if isinstance(config_name, str):
         config = load_cfg(config_name)
     else:
@@ -180,6 +197,8 @@ def main(config_name, jobnumber):
     except:
         config.sub = {}
         config.sub[f'{jobnumber}'] = {}
+    if verbose:
+        print('Sampling Binary')
     config.sub[f'{jobnumber}']['central_mass'] = sample(config.central_l_mass, config.central_u_mass, size=1)[0]
     nb_u, nb_l, avgdist, lsma, usma, lecc, uecc, linc, uinc = \
         config.num_bodies_u, config.num_bodies_l, config.avg_dist, \
@@ -187,6 +206,8 @@ def main(config_name, jobnumber):
         config.lower_ecc, config.upper_ecc, \
         config.lower_inc, config.upper_inc
     config.sub[f'{jobnumber}']['binary_mass'] = sample(config.binary_l_mass, config.binary_u_mass, size=1, resample=True, lim=config.sub[f'{jobnumber}']['central_mass'], logic='<')[0]
+    if verbose:
+        print('Sampling Bodies')
     mass = config.sub[f'{jobnumber}']['central_mass']
     # generate lower orbit runs
     orbits = []
@@ -199,7 +220,9 @@ def main(config_name, jobnumber):
                     linc, uinc, mass, # noqa
                     size=1)[1][0]) # noqa
     config.sub[f'{jobnumber}']['orbitals'] = orbits
-    generate_sim(config, orbits, jobnumber)
+    if verbose:
+        print('Generating')
+    generate_sim(config, orbits, jobnumber, verbose)
     pass
 
 if __name__ == "__main__":
@@ -210,7 +233,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print('Constructing')
-    main(args.c, args.j)
+    main(args.c, args.j, True)
     print('Finished')
 
 # end of code
