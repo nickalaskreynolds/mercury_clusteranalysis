@@ -20,7 +20,7 @@ from nkrpy.load import load_cfg, verify_dir, mod_2_dict
 from nkrpy.files import freplace
 from nkrpy.miscmath import plummer_radius, sample
 from nkrpy.functions import format_decimal
-from nkrpy.constants import msun, g, au
+from nkrpy.constants import msun, g, au, kepler
 
 # relative modules
 
@@ -147,9 +147,15 @@ def generate_sim(cfg, orbitals, jobnumber):
     freplace(f'{sim_name}/cluster.in', '<days_for_interaction>', '{}'.format(int(cfg.days_for_interaction)))
 
     # handle param.in
+    def compute_timestep(mass, state_vec):
+        orb = xyz_2_orbital(state_vec[np.newaxis, :], mass)[0]
+        print(orb, mass)
+        return ((1. / (kepler * mass)) * (orb[0] ** 3)) ** 0.5 / 20.
+
+    timestep = compute_timestep(central_mass, orbitals[0, :])
     freplace(f'{sim_name}/param.in', '<stop>', '{}'.format(cfg.stop_time))
     freplace(f'{sim_name}/param.in', '<interval>', '{}'.format(cfg.output_time))
-    freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(cfg.timestep)))
+    freplace(f'{sim_name}/param.in', '<timestep>', '{}'.format(int(np.ceil(timestep))))
     freplace(f'{sim_name}/param.in', '<mass>', '{}'.format(float(cfg.sub[f'{jobnumber}']['central_mass'])))
     freplace(f'{sim_name}/param.in', '<bb>', '{}'.format(int(cfg.sub[f'{jobnumber}']['num_bodies'])))
 

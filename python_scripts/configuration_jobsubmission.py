@@ -16,7 +16,6 @@ program = 'mercury6_4mult_passstarsfeelplum_instantremove_closeenc_nogasdisk'  #
 # integrator config
 stop_time = 365.25e8  # days
 output_time = 365.25E4  # days
-timestep = 100E0  # days
 
 # cluster
 cluster_mass = 1.E-12  # mass of the cluster in msun
